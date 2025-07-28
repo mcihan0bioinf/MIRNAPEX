@@ -2,7 +2,7 @@
 
 ## Overview
 
-**MIRNAPEX is a computational pipeline that predicts differential expression values (logFC) of microR8NAs directly from raw RNA sequencing data**.
+**MIRNAPEX is a computational pipeline that predicts differential expression values (logFC) of microRNAs directly from raw RNA sequencing data**.
 
 It uses pretrained machine learning models to compute microRNA logFCs from transcriptomic features—specifically, alternative polyadenylation (APA) changes and gene expression differences between two groups of samples. These groups can:
 
