@@ -1,0 +1,17 @@
+
+reference:
+  genome: data/reference/GRCh38.primary_assembly.genome.fa
+  gtf: data/reference/gencode.v44.annotation.gtf
+
+project_name: test_project
+
+samples:
+  test_sample1: [test/test1.fastq]
+  test_sample2: [test/test2.fastq]
+
+groups:
+   group1: ["test_sample1"]
+   group2: ["test_sample2"]
+
+
+

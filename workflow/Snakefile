@@ -1,0 +1,326 @@
+GENOME = config["reference"]["genome"]
+GTF = config["reference"]["gtf"]
+SAMPLES = config["samples"]
+PROJECT = config["project_name"]
+SAMPLE_NAMES = list(SAMPLES.keys())
+PROJECT_DIR = f"results/{PROJECT}"
+rule all:
+    input:
+        f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv",  # From merge_tpms
+        "data/reference/hg38_3UTR_annotation.bed",  # From extract_dapars_3utr_annotation
+        f"{PROJECT_DIR}/dapars2/output/{PROJECT}_merged_dapars2.txt",  # From run_dapars2
+        f"{PROJECT_DIR}/features/{PROJECT}_gene_logfc.csv",  # From prepare_gene_logfc_features
+        f"{PROJECT_DIR}/features/{PROJECT}_apa_difference.csv",  # From prepare_apa_features
+        f"{PROJECT_DIR}/microRNA_predictions/{PROJECT}_microRNA_logFC.csv" # microRNA logFC values
+
+# Step 1: Shared genome index
+rule build_star_index_pass1:
+    input:
+        genome = GENOME,
+        gtf = GTF
+    output:
+        directory(f"{PROJECT_DIR}/star/index_pass1")
+    threads: 8
+    shell:
+        """
+        mkdir -p {output}
+        STAR --runMode genomeGenerate \
+             --genomeDir {output} \
+             --genomeFastaFiles {input.genome} \
+             --sjdbGTFfile {input.gtf} \
+             --sjdbOverhang 100 \
+             --runThreadN {threads}
+        """
+
+# Step 2: First-pass alignment per sample
+rule star_align_pass1:
+    input:
+        reads = lambda wc: SAMPLES[wc.sample],
+        index = f"{PROJECT_DIR}/star/index_pass1"
+    output:
+        sj = f"{PROJECT_DIR}/star/pass1/{{sample}}/SJ.out.tab"
+    threads: 8
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/star/pass1/{wildcards.sample}
+        STAR --genomeDir {input.index} \
+             --readFilesIn {input.reads} \
+             --runThreadN {threads} \
+             --readFilesCommand cat \
+             --outFilterMultimapScoreRange 1 \
+             --outFilterMultimapNmax 20 \
+             --outFilterMismatchNmax 10 \
+             --alignIntronMax 500000 \
+             --alignMatesGapMax 1000000 \
+             --sjdbScore 2 \
+             --alignSJDBoverhangMin 1 \
+             --genomeLoad NoSharedMemory \
+             --outFilterMatchNminOverLread 0.33 \
+             --outFilterScoreMinOverLread 0.33 \
+             --sjdbOverhang 100 \
+             --outSAMstrandField intronMotif \
+             --outSAMtype None \
+             --outSAMmode None \
+             --outFileNamePrefix {PROJECT_DIR}/star/pass1/{wildcards.sample}/
+        """
+
+# Step 3: Build second-pass index per sample
+rule build_star_index_pass2:
+    input:
+        genome = GENOME,
+        gtf = GTF,
+        sj = f"{PROJECT_DIR}/star/pass1/{{sample}}/SJ.out.tab"
+    output:
+        directory(f"{PROJECT_DIR}/star/index_pass2/{{sample}}")
+    threads: 8
+    shell:
+        """
+        mkdir -p {output}
+        STAR --runMode genomeGenerate \
+             --genomeDir {output} \
+             --genomeFastaFiles {input.genome} \
+             --sjdbGTFfile {input.gtf} \
+             --sjdbOverhang 100 \
+             --sjdbFileChrStartEnd {input.sj} \
+             --runThreadN {threads}
+        """
+
+# Step 4: Second-pass alignment
+rule star_align_pass2:
+    input:
+        reads = lambda wc: SAMPLES[wc.sample],
+        index = f"{PROJECT_DIR}/star/index_pass2/{{sample}}"
+    output:
+        bam = f"{PROJECT_DIR}/star/pass2/{{sample}}/Aligned.sortedByCoord.out.bam",
+        gene_counts = f"{PROJECT_DIR}/star/pass2/{{sample}}/ReadsPerGene.out.tab"
+    threads: 8
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/star/pass2/{wildcards.sample}
+        STAR --genomeDir {input.index} \
+             --readFilesIn {input.reads} \
+             --runThreadN {threads} \
+             --readFilesCommand cat \
+             --outFilterMultimapScoreRange 1 \
+             --outFilterMultimapNmax 20 \
+             --outFilterMismatchNmax 10 \
+             --alignIntronMax 500000 \
+             --alignMatesGapMax 1000000 \
+             --sjdbScore 2 \
+             --alignSJDBoverhangMin 1 \
+             --genomeLoad NoSharedMemory \
+             --limitBAMsortRAM 0 \
+             --outFilterMatchNminOverLread 0.33 \
+             --outFilterScoreMinOverLread 0.33 \
+             --sjdbOverhang 100 \
+             --outSAMstrandField intronMotif \
+             --outSAMattributes NH HI NM MD AS XS \
+             --outSAMunmapped Within \
+             --outSAMtype BAM SortedByCoordinate \
+             --outSAMmode Full \
+             --quantMode GeneCounts \
+             --outFileNamePrefix {PROJECT_DIR}/star/pass2/{wildcards.sample}/
+        """
+
+# Step 5: Extract gene metadata
+rule extract_gene_metadata:
+    input:
+        gtf = GTF
+    output:
+        f"{PROJECT_DIR}/metadata/gene_metadata.tsv"
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/metadata
+        python workflow/scripts/extract_gene_info.py {input.gtf} {output}
+        """
+# Step 6: TPM calculation
+rule calculate_tpm:
+    input:
+        counts = f"{PROJECT_DIR}/star/pass2/{{sample}}/ReadsPerGene.out.tab",
+        metadata = f"{PROJECT_DIR}/metadata/gene_metadata.tsv"
+    output:
+        tpm = temp(f"{PROJECT_DIR}/tmp_tpm/{{sample}}_tpm.tsv")
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/tmp_tpm
+        python workflow/scripts/calculate_tpm.py {input.counts} {input.metadata} {output.tpm}
+        """
+
+#Step 7: Merge TPM
+rule merge_tpms:
+    input:
+        tpms = expand(f"{PROJECT_DIR}/tmp_tpm/{{sample}}_tpm.tsv", sample=SAMPLE_NAMES)
+    output:
+        merged = f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv"
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/counts
+        python workflow/scripts/merge_tpms.py {input} {output.merged}
+        """
+
+#Step 8: Create DaPars2 3'UTR annotation file
+rule extract_dapars_3utr_annotation:
+    input:
+        bed = "data/reference/hg38_wholeGene_annotation.bed",
+        id_map = "data/reference/hg38_refseq_IDmapping.txt"
+    output:
+        "data/reference/hg38_3UTR_annotation.bed"
+    shell:
+        """
+        python tools/DaPars2/src/DaPars_Extract_Anno.py \
+            -b {input.bed} \
+            -s {input.id_map} \
+            -o {output}
+        """
+
+#Step 9: Convert BAM to bedGraph ("wig")
+rule bam_to_wig:
+    input:
+        bam = f"{PROJECT_DIR}/star/pass2/{{sample}}/Aligned.sortedByCoord.out.bam"
+    output:
+        wig = f"{PROJECT_DIR}/dapars2/wig/{{sample}}.wig"
+    threads: 4
+    shell:
+        """
+        mkdir -p $(dirname {output.wig})
+        bedtools genomecov -bg -ibam {input.bam} -split > {output.wig}
+        """
+
+#Step 10: Calculate sequencing depth
+rule calc_seq_depth:
+    input:
+        bam = f"{PROJECT_DIR}/star/pass2/{{sample}}/Aligned.sortedByCoord.out.bam"
+    output:
+        depth = temp(f"{PROJECT_DIR}/dapars2/depth/{{sample}}.depth")
+    shell:
+        """
+        mkdir -p $(dirname {output.depth})
+        samtools view -c -F 4 {input.bam} > {output.depth}
+        """
+
+#Step 11: Merge depths into DaPars mapping_bam_location_with_depth.txt
+rule build_depth_mapping:
+    input:
+        depths = expand(f"{PROJECT_DIR}/dapars2/depth/{{sample}}.depth", sample=SAMPLE_NAMES),
+        wigs = expand(f"{PROJECT_DIR}/dapars2/wig/{{sample}}.wig", sample=SAMPLE_NAMES)
+    output:
+        f"{PROJECT_DIR}/dapars2/mapping_wig_location_with_depth.txt"
+    run:
+        lines = []
+        for sample in SAMPLE_NAMES:
+            wig = f"{PROJECT_DIR}/dapars2/wig/{sample}.wig"
+            depth_file = f"{PROJECT_DIR}/dapars2/depth/{sample}.depth"
+            with open(depth_file) as f:
+                d = f.read().strip()
+            lines.append(f"{wig}\t{d}")
+        with open(output[0], "w") as out:
+            out.write("\n".join(lines))
+
+
+#Step 12: Generate chromosome list
+rule make_chr_list:
+    input:
+        "data/reference/hg38_3UTR_annotation.bed"
+    output:
+        "data/reference/chrList.txt"
+    shell:
+        """
+        cut -f1 {input} | sort | uniq > {output}
+        """
+
+
+#Step 13: Create DaPars2 Config
+rule create_dapars_config:
+    input:
+        utr = "data/reference/hg38_3UTR_annotation.bed",
+        depth_map = f"{PROJECT_DIR}/dapars2/mapping_wig_location_with_depth.txt"
+    output:
+        f"{PROJECT_DIR}/dapars2/DaPars2_config.txt"
+    run:
+        wig_files = ",".join([f"{PROJECT_DIR}/dapars2/wig/{sample}.wig" for sample in SAMPLE_NAMES])
+        with open(output[0], "w") as f:
+            f.write(f"""# Specify the reference of 3'UTR region
+Annotated_3UTR={input.utr}
+
+# A comma separated list of wig files of all samples
+Aligned_Wig_files={wig_files}
+
+Output_directory={PROJECT_DIR}/dapars2/
+
+Output_result_file={PROJECT}_dapars_result
+
+# Specify Coverage threshold
+Coverage_threshold=10
+
+# Specify the number of threads to process the analysis
+Num_Threads=4
+
+# Provide sequencing depth file for normalization
+sequencing_depth_file={input.depth_map}
+""")
+
+
+
+#Step 14: Run DaPars2 on all samples
+rule run_dapars2:
+    input:
+        config = f"{PROJECT_DIR}/dapars2/DaPars2_config.txt",
+        chrlist = "data/reference/chrList.txt"
+    output:
+        f"{PROJECT_DIR}/dapars2/output/{PROJECT}_merged_dapars2.txt"
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/dapars2/output
+        python tools/DaPars2/src/DaPars2_Multi_Sample_Multi_Chr.py {input.config} {input.chrlist}
+
+        # Write header from the first file (correct globbing)
+        first_file=$(find {PROJECT_DIR}/dapars2_chr* -type f -name "{PROJECT}_dapars_result_result_temp.chr*.txt" | head -n 1)
+        head -n 1 "$first_file" > {output}
+
+        # Concatenate all others without header
+        find {PROJECT_DIR}/dapars2_chr* -type f -name "{PROJECT}_dapars_result_result_temp.chr*.txt" | while read file; do
+            tail -n +2 "$file" >> {output}
+        done
+
+        rm -rf {PROJECT_DIR}/dapars2_chr*
+        """
+
+# Step 15: Prepare gene expression logFC features
+rule prepare_gene_logfc_features:
+    input:
+        tpm_matrix = f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv",
+        config_file = "config/config.yaml"
+    output:
+        f"{PROJECT_DIR}/features/{PROJECT}_gene_logfc.csv"
+    shell:
+        """
+        python workflow/scripts/prepare_gene_logfc.py {input.tpm_matrix} {input.config_file} {output}
+        """
+
+# Step 16: Prepare APA difference features
+rule prepare_apa_features:
+    input:
+        dapars_output = f"{PROJECT_DIR}/dapars2/output/{PROJECT}_merged_dapars2.txt",
+        config_file = "config/config.yaml"
+    output:
+        f"{PROJECT_DIR}/features/{PROJECT}_apa_difference.csv"
+    shell:
+        """
+        python workflow/scripts/prepare_apa_features.py {input.dapars_output} {input.config_file} {output}
+        """
+
+# Step 17: Predict microRNA logFC values
+rule predict_microRNA_logfc:
+    input:
+        models = "data/model/combined_models.pkl",
+        apa = f"{PROJECT_DIR}/features/{PROJECT}_apa_difference.csv",
+        gene = f"{PROJECT_DIR}/features/{PROJECT}_gene_logfc.csv",
+        r2_scores = "data/model/microRNA_model_r2_scores.csv"
+    output:
+        f"{PROJECT_DIR}/microRNA_predictions/{PROJECT}_microRNA_logFC.csv"
+    shell:
+        """
+        mkdir -p {PROJECT_DIR}/microRNA_predictions
+        python workflow/scripts/predict_microRNA_logfc.py {input.models} {input.apa} {input.gene} {input.r2_scores} {output}
+        """
+

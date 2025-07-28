@@ -1,0 +1,27 @@
+
+reference:
+  genome: data/reference/GRCh38.primary_assembly.genome.fa
+  gtf: data/reference/gencode.v44.annotation.gtf
+
+project_name: GSE179630
+
+samples:
+  SRR15058558: [data/raw/GSE179630/raw/SRR15058558.fastq]
+  SRR15058559: [data/raw/GSE179630/raw/SRR15058559.fastq]
+  SRR15058560: [data/raw/GSE179630/raw/SRR15058560.fastq]
+  SRR15058561: [data/raw/GSE179630/raw/SRR15058561.fastq]
+  SRR15058562: [data/raw/GSE179630/raw/SRR15058562.fastq]
+  SRR15058566: [data/raw/GSE179630/raw/SRR15058566.fastq]
+  SRR15058567: [data/raw/GSE179630/raw/SRR15058567.fastq]
+  SRR15058568: [data/raw/GSE179630/raw/SRR15058568.fastq]
+
+#groups:
+#   group1: ["SRR15058558","SRR15058559","SRR15058560"]
+#   group2: ["SRR15058561","SRR15058562"]
+
+groups:
+   group1: ["SRR15058558","SRR15058559","SRR15058560"]
+   group2: ["SRR15058566","SRR15058567","SRR15058568"]
+
+
+
