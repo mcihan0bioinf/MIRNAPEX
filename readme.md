@@ -1,8 +1,8 @@
 # MIRNAPEX (MicroRNA logFC from Alternative Polyadenylation and Expression)
 
-## Overview
+MIRNAPEX is a computational pipeline that predicts differential expression values (logFC) of microRNAs directly from raw RNA sequencing data.
 
-**MIRNAPEX is a computational pipeline that predicts differential expression values (logFC) of microRNAs directly from raw RNA sequencing data**.
+![Workflow](figure/workflow.png)
 
 It uses pretrained machine learning models to compute microRNA logFCs from transcriptomic features—specifically, alternative polyadenylation (APA) changes and gene expression differences between two groups of samples. These groups can:
 
@@ -10,13 +10,6 @@ It uses pretrained machine learning models to compute microRNA logFCs from trans
 - Include a mix of **single-end** and **paired-end** RNA-seq FASTQ files
 
 MIRNAPEX processes the data from alignment and quantification to feature extraction and final microRNA prediction in a fully automated Snakemake pipeline.
-
----
-## Workflow Diagram
-
-![Workflow](figure/workflow.png)
-
----
 
 ---
 
@@ -102,6 +95,10 @@ MIRNAPEX uses pretrained microRNA-specific regression models to perform logFC pr
 - `microRNA_model_r2_scores.csv`:  
   A CSV file containing the cross-validated R² scores for each microRNA model, indicating its prediction reliability. The confidence level (*High*, *Moderate*) in the final output is derived from this score.
 
+Before running the pipeline, extract the model files by running:
+```bash
+unzip data/model/combined_models.zip -d data/model/
+```
 
 ## Input Data
 
