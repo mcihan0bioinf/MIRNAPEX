@@ -58,6 +58,7 @@ pip install pandas numpy scikit-learn
 Clone the DaPars2 repository into the `tools/` directory:
 
 ```bash
+cd MIRNAPEX
 git clone https://github.com/3UTR/DaPars2.git tools/DaPars2
 ```
 
