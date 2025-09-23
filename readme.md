@@ -70,13 +70,11 @@ Download the required genome and annotation files into `data/reference/`:
 ```bash
 cd data/reference
 
-wget -O data/reference/gencode.v44.annotation.gtf.gz \
-  https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.annotation.gtf.gz
-gunzip data/reference/gencode.v44.annotation.gtf.gz
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.annotation.gtf.gz
+gunzip gencode.v44.annotation.gtf.gz
 
-wget -O data/reference/GRCh38.primary_assembly.genome.fa.gz \
-  https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/GRCh38.primary_assembly.genome.fa.gz
-gunzip data/reference/GRCh38.primary_assembly.genome.fa.gz
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/GRCh38.primary_assembly.genome.fa.gz
+gunzip GRCh38.primary_assembly.genome.fa.gz
 ```
 
 The following files are already provided and used for DaPars2 annotation:
