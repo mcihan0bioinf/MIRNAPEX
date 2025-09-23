@@ -45,7 +45,9 @@ MIRNAPEX depends on the following software tools:
 You can install them using `conda`:
 
 ```bash
-conda create -n MIRNAPEX_env python=3.8 
+conda create -n MIRNAPEX_env python=3.8
+#conda init bash #if working on the cluster
+#source ~/.bashrc  #if working on the cluster
 conda activate MIRNAPEX_env
 conda install -c conda-forge -c bioconda snakemake star bedtools samtools=1.16.1 
 ```
