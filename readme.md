@@ -46,10 +46,8 @@ You can install them using `conda`:
 
 ```bash
 conda create -n MIRNAPEX_env python=3.8
-#conda init bash #if working on the cluster
-#source ~/.bashrc  #if working on the cluster
+conda create -p MIRNAPEX_env -c conda-forge -c bioconda python=3.8 snakemake star bedtools samtools=1.16.1
 conda activate MIRNAPEX_env
-conda install -c conda-forge -c bioconda snakemake star bedtools samtools=1.16.1 
 ```
 Install python dependencies:
 ```bash
