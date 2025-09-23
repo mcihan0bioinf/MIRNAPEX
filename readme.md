@@ -98,7 +98,7 @@ Before running the pipeline, extract the model files by running:
 ```bash
 cd ..
 cd model
-unzip data/model/combined_models.zip -d data/model/
+unzip combined_models.zip
 ```
 
 ## Input Data
