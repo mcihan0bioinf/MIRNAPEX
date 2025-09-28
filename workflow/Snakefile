@@ -1,3 +1,9 @@
+ACTIVE_CONFIGFILE = (
+    workflow.overwrite_configfiles[0]
+    if getattr(workflow, "overwrite_configfiles", None)
+    else "config/config.yaml"
+)
+
 GENOME = config["reference"]["genome"]
 GTF = config["reference"]["gtf"]
 SAMPLES = config["samples"]
@@ -288,25 +294,27 @@ rule run_dapars2:
 # Step 15: Prepare gene expression logFC features
 rule prepare_gene_logfc_features:
     input:
-        tpm_matrix = f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv",
-        config_file = "config/config.yaml"
+        tpm_matrix = f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv"
+    params:
+        config_file = ACTIVE_CONFIGFILE
     output:
         f"{PROJECT_DIR}/features/{PROJECT}_gene_logfc.csv"
     shell:
         """
-        python workflow/scripts/prepare_gene_logfc.py {input.tpm_matrix} {input.config_file} {output}
+        python workflow/scripts/prepare_gene_logfc.py {input.tpm_matrix} {params.config_file} {output}
         """
 
 # Step 16: Prepare APA difference features
 rule prepare_apa_features:
     input:
-        dapars_output = f"{PROJECT_DIR}/dapars2/output/{PROJECT}_merged_dapars2.txt",
-        config_file = "config/config.yaml"
+        dapars_output = f"{PROJECT_DIR}/dapars2/output/{PROJECT}_merged_dapars2.txt"
+    params:
+        config_file = ACTIVE_CONFIGFILE
     output:
         f"{PROJECT_DIR}/features/{PROJECT}_apa_difference.csv"
     shell:
         """
-        python workflow/scripts/prepare_apa_features.py {input.dapars_output} {input.config_file} {output}
+        python workflow/scripts/prepare_apa_features.py {input.dapars_output} {params.config_file} {output}
         """
 
 # Step 17: Predict microRNA logFC values
