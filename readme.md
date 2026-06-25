@@ -272,8 +272,10 @@ The `workflow/scripts/` directory contains Python scripts used throughout the pi
 
 If you use MIRNAPEX, please cite our paper:
 
-Cihan, M., More, P., Sprang, M., Marini, F., & Andrade-Navarro, M. A. (2026). Target-site dynamics explain a large share of apparent microRNA differential expression. *RNA*, 32(7), 1005-1019.
+**Cihan, M., More, P., Sprang, M., Marini, F., & Andrade-Navarro, M. A. (2026). Target-site dynamics explain a large share of apparent microRNA differential expression. *RNA*, 32(7), 1005-1019.**
 
-<sub>Please also consider citing the DaPars2 paper, since MIRNAPEX relies on it for APA analysis: Li, Lei, et al. "An atlas of alternative polyadenylation quantitative trait loci contributing to complex trait and disease heritability." *Nature Genetics* 53.7 (2021): 994-1005.</sub>
+> Please also consider citing the DaPars2 paper that MIRNAPEX implements in the pipeline:
+>
+> Li, Lei, et al. "An atlas of alternative polyadenylation quantitative trait loci contributing to complex trait and disease heritability." *Nature Genetics* 53.7 (2021): 994-1005.
 
 
