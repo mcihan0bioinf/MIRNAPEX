@@ -191,6 +191,12 @@ This will perform:
 - APA analysis with DaPars2
 - Feature extraction and microRNA prediction
 
+> **Note on first run time:** The shared STAR genome index (`data/reference/star_index_pass1`) is the slowest step in the pipeline (tens of minutes for GRCh38). It is built only once per genome/GTF version and automatically reused by every subsequent project/run, as long as the reference files don't change. If you want to avoid this wait on your very first real run, you can pre-build the index ahead of time, e.g. using the test config:
+> ```bash
+> snakemake --cores 8 --configfile test/config_test.yaml data/reference/star_index_pass1
+> ```
+> Subsequent runs with any project will then skip straight to alignment.
+
 ---
 
 ## Output Structure
@@ -216,9 +222,10 @@ results/your_project_name/
 ├── star/
 │   ├── pass1/
 │   ├── pass2/
-│   ├── index_pass1/
 │   └── index_pass2/
 ```
+
+The shared first-pass genome index (`star_index_pass1`) lives outside `results/`, under `data/reference/`, since it's reused across all projects (see note above).
 
 ### Output Highlights
 
@@ -258,5 +265,15 @@ The `workflow/scripts/` directory contains Python scripts used throughout the pi
 - Input: FASTQ files (single or paired-end) and reference annotation
 - Steps: Expression quantification → APA analysis → microRNA logFC prediction
 - Output: Predicted differential microRNA expression profiles
+
+---
+
+## Citation
+
+If you use MIRNAPEX, please cite our paper:
+
+Cihan, M., More, P., Sprang, M., Marini, F., & Andrade-Navarro, M. A. (2026). Target-site dynamics explain a large share of apparent microRNA differential expression. *RNA*, 32(7), 1005-1019.
+
+<sub>Please also consider citing the DaPars2 paper, since MIRNAPEX relies on it for APA analysis: Li, Lei, et al. "An atlas of alternative polyadenylation quantitative trait loci contributing to complex trait and disease heritability." *Nature Genetics* 53.7 (2021): 994-1005.</sub>
 
 

@@ -19,13 +19,13 @@ rule all:
         f"{PROJECT_DIR}/features/{PROJECT}_apa_difference.csv",  # From prepare_apa_features
         f"{PROJECT_DIR}/microRNA_predictions/{PROJECT}_microRNA_logFC.csv" # microRNA logFC values
 
-# Step 1: Shared genome index
+# Step 1: Shared genome index (built once per genome/GTF, reused across all projects)
 rule build_star_index_pass1:
     input:
         genome = GENOME,
         gtf = GTF
     output:
-        directory(f"{PROJECT_DIR}/star/index_pass1")
+        directory("data/reference/star_index_pass1")
     threads: 8
     shell:
         """
@@ -42,7 +42,7 @@ rule build_star_index_pass1:
 rule star_align_pass1:
     input:
         reads = lambda wc: SAMPLES[wc.sample],
-        index = f"{PROJECT_DIR}/star/index_pass1"
+        index = "data/reference/star_index_pass1"
     output:
         sj = f"{PROJECT_DIR}/star/pass1/{{sample}}/SJ.out.tab"
     threads: 8
