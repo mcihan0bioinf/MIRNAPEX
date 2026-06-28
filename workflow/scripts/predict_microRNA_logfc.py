@@ -33,6 +33,7 @@ def tag_confidence(r2):
     return "High" if r2 >= 0.5 else "Moderate"
 
 results = []
+total_missing = 0
 
 # Predict
 for mirna, model_data in models.items():
@@ -45,6 +46,8 @@ for mirna, model_data in models.items():
     model = model_data["model"]
     scaler = model_data["scaler"]
 
+    missing_features = [f for f in features if f not in feature_vector]
+    total_missing += len(missing_features)
     values = [feature_vector.get(f, 0.0) for f in features]
     X_df = pd.DataFrame([values], columns=features)
     X_scaled_array = scaler.transform(X_df)
@@ -54,8 +57,18 @@ for mirna, model_data in models.items():
     results.append({
         "microRNA": mirna,
         "logFC": logfc,
-        "Confidence": confidence
+        "Confidence": confidence,
+        "Missing_Features": len(missing_features),
+        "Total_Features": len(features)
     })
+
+if total_missing:
+    print(
+        f"Warning: {total_missing} model input feature(s) were missing from the "
+        "gene/APA feature tables across all microRNAs and were imputed as 0.0 "
+        "(no detected change). See the Missing_Features column in the output.",
+        file=sys.stderr
+    )
 
 # Output: sort by absolute logFC
 df = pd.DataFrame(results)

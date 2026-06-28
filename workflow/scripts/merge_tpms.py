@@ -1,12 +1,12 @@
 import sys
 import pandas as pd
 
-input_files = sys.argv[1:-1]
+sample_names = sys.argv[1].split(",")
+input_files = sys.argv[2:-1]
 output = sys.argv[-1]
 
 merged = None
-for path in input_files:
-    sample = path.split("/")[-1].split("_")[0]
+for sample, path in zip(sample_names, input_files):
     df = pd.read_csv(path, sep="\t")
     df = df[["Geneid", "GeneSymbol", "TPM"]].rename(columns={"TPM": sample})
     if merged is None:

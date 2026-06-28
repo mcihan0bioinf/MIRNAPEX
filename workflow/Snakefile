@@ -156,12 +156,14 @@ rule calculate_tpm:
 rule merge_tpms:
     input:
         tpms = expand(f"{PROJECT_DIR}/tmp_tpm/{{sample}}_tpm.tsv", sample=SAMPLE_NAMES)
+    params:
+        samples = ",".join(SAMPLE_NAMES)
     output:
         merged = f"{PROJECT_DIR}/counts/{PROJECT}_merged_tpm_matrix.csv"
     shell:
         """
         mkdir -p {PROJECT_DIR}/counts
-        python workflow/scripts/merge_tpms.py {input} {output.merged}
+        python workflow/scripts/merge_tpms.py "{params.samples}" {input} {output.merged}
         """
 
 #Step 8: Create DaPars2 3'UTR annotation file

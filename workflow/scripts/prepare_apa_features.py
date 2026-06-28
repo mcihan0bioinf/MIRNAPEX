@@ -30,13 +30,17 @@ df.columns = [col.split("/")[-1].replace("_PDUI", "") if "PDUI" in col else col 
 pdui_cols = [col for col in df.columns if col in group1_samples + group2_samples]
 df_reduced = df[["GeneSymbol"] + pdui_cols]
 
-# Aggregate by gene symbol (mean across isoforms, ignoring NA)
-df_grouped = df_reduced.groupby("GeneSymbol").agg(lambda x: np.nanmean(x) if not x.isna().all() else 0)
+# Aggregate by gene symbol (mean across isoforms, ignoring NA; stays NaN if all isoforms are NA)
+df_grouped = df_reduced.groupby("GeneSymbol").mean()
 
 # Compute APA difference
 group1_mean = df_grouped[group1_samples].mean(axis=1)
 group2_mean = df_grouped[group2_samples].mean(axis=1)
 apa_diff = group1_mean - group2_mean
+
+# Genes with no usable PDUI value in a group have no real signal; drop them
+# rather than reporting a fabricated difference (e.g. PDUI=0 is a real, extreme value).
+apa_diff = apa_diff.dropna()
 
 # Append _apa to feature names
 apa_diff.index = apa_diff.index + "_apa"
