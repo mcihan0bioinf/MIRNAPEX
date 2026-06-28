@@ -34,23 +34,18 @@ The pipeline operates in three main stages:
 
 MIRNAPEX depends on the following software tools:
 
-- Snakemake 
+- Snakemake
 - STAR
 - BEDTools
 - SAMtools
 - Python
-- SciPy-bundle
-- pandas, numpy, scikit-learn
+- pandas, numpy, scikit-learn, pyyaml, joblib
 
-You can install them using `conda`:
+`environment.yml` declares all of these, so a single `conda` (or `mamba`) command sets up everything needed — no separate `pip install` step required:
 
 ```bash
 conda env create -f environment.yml
 conda activate MIRNAPEX_env
-```
-Install python dependencies:
-```bash
-pip install pandas numpy scikit-learn
 ```
 ### Install DaPars2
 
