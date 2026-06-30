@@ -162,7 +162,7 @@ Groups define sets of samples to be compared. MIRNAPEX calculates:
 ---
 
 ## Running the Pipeline
-Activate the environemnt (if installed with conda):
+Activate the environment (if installed with conda):
 ```bash
 conda activate MIRNAPEX_env
 ```
